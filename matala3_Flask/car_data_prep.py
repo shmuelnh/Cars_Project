@@ -12,7 +12,7 @@ from sklearn.compose import ColumnTransformer
 
 
 
-def prepare_data(df):
+def prepare_data(df, training=True):
    #הורדנו עמודות שלא שימושיות לחיזוי
     df = df.drop(['Cre_date','Repub_date','Test','Supply_score'], axis=1)
 
@@ -298,38 +298,41 @@ def prepare_data(df):
     df = encoded_df
 
 
-    X = df.drop(['Price'],axis=1)
+    X = df.drop(['Price'], axis=1)
     y = df['Price']
-    
-    ###Feature Selection:
-    
-    def backward_elimination(X, y, significance_level=0.05):
-        features = list(X.columns)
-    
-        while len(features) > 0:
-            # חישוב F-statistics ו-p-values
-            f_stats, p_values = f_regression(X[features], y)
-        
-            # מציאת ה-p-value הגבוה ביותר
-            max_p_value = p_values.max()
-        
-            if max_p_value > significance_level:
-                # מציאת המאפיין עם ה-p-value הגבוה ביותר
-                excluded_feature = features[p_values.argmax()]
-            
-                # הסרת המאפיין מהרשימה
-                features.remove(excluded_feature)
-            else:
-                # אם כל ה-p-values מתחת ל-significance level, עוצרים
-                break
-    
-        return features
-    # שימוש בפונקציה
-    selected_features = backward_elimination(X, y)
-    
-    ###הגדרת x ו y
-    X = df[selected_features]
-    y = df['Price']
+
+    # Feature Selection is relevant only during the training phase. When this
+    # function is used for preprocessing a single sample prior to prediction,
+    # running f_regression will fail because at least two samples are required.
+    if training:
+        def backward_elimination(X, y, significance_level=0.05):
+            features = list(X.columns)
+
+            while len(features) > 0:
+                # חישוב F-statistics ו-p-values
+                f_stats, p_values = f_regression(X[features], y)
+
+                # מציאת ה-p-value הגבוה ביותר
+                max_p_value = p_values.max()
+
+                if max_p_value > significance_level:
+                    # מציאת המאפיין עם ה-p-value הגבוה ביותר
+                    excluded_feature = features[p_values.argmax()]
+
+                    # הסרת המאפיין מהרשימה
+                    features.remove(excluded_feature)
+                else:
+                    # אם כל ה-p-values מתחת ל-significance level, עוצרים
+                    break
+
+            return features
+
+        # שימוש בפונקציה
+        selected_features = backward_elimination(X, y)
+        X = df[selected_features]
+    else:
+        # בשלב החיזוי נשתמש בכל העמודות כפי שהן
+        selected_features = X.columns
     ### איחוד לדאטה פריים אחד
     def combine_features_and_target(X, y):
     # Create a copy of X to avoid modifying the original DataFrame

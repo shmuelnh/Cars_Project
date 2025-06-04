@@ -34,7 +34,7 @@ def predict():
     input_data['Price'] = 0
     
     # Prepare the data using the imported prepare_data function
-    processed_data = prepare_data(input_data)
+    processed_data = prepare_data(input_data, training=False)
 
     # נרצה למלא את העמודות החסרות כדי שהמודל יקבל את מספר העמודות הנדרש
     for col in model_columns:
